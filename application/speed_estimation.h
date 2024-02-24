@@ -52,8 +52,8 @@ void SpeedEstimation(LinkNPodParam *lp, LinkNPodParam *rp, ChassisParam *cp, INS
     // cp->dist = cp->dist + cp->vel * delta_t;
 
     // 以轮子为基点,计算机体两侧髋关节处的速度
-    lp->body_v = lp->wheel_w * WHEEL_RADIUS + lp->leg_len * lp->theta_w + lp->legd * msin(lp->theta);
-    rp->body_v = rp->wheel_w * WHEEL_RADIUS + rp->leg_len * rp->theta_w + rp->legd * msin(rp->theta);
+    lp->body_v = lp->wheel_w * WHEEL_RADIUS + lp->leg_len * lp->theta_w * mcos(lp->theta)+ lp->legd * msin(lp->theta);
+    rp->body_v = rp->wheel_w * WHEEL_RADIUS + rp->leg_len * rp->theta_w * mcos(rp->theta)+ rp->legd * msin(rp->theta);
     cp->vel_m = (lp->body_v + rp->body_v) / 2; // 机体速度(平动)为两侧速度的平均值
 
     // 扣除旋转导致的向心加速度和角加速度*R
