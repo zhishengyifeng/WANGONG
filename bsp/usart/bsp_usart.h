@@ -8,7 +8,7 @@
 #define USART_RXBUFF_LIMIT 256 // 如果协议需要更大的buff,请修改这里
 
 // 模块回调函数,用于解析协议
-typedef void (*usart_module_callback)();
+typedef void (*usart_module_callback)(struct _ *);
 
 /* 发送模式枚举 */
 typedef enum

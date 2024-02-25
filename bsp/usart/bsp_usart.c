@@ -100,11 +100,12 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
     for (uint8_t i = 0; i < idx; ++i)
     { // find the instance which is being handled
-        if (huart == usart_instance[i]->usart_handle)
-        { // call the callback function if it is not NULL
-            if (usart_instance[i]->module_callback != NULL)
+    { // 两者相等说明这是要找的实例
+        if (huart == usart_instance[i]->usart_handle )
+        {
+            if (usart_instance[i]->module_callback != NULL) // 回调函数不为空就调用
             {
-                usart_instance[i]->module_callback();
+                usart_instance[i]->module_callback(usart_instance[i]);     // 触发回调进行数据解析和处理
                 memset(usart_instance[i]->recv_buff, 0, Size); // 接收结束后清空buffer,对于变长数据是必要的
             }
             HAL_UARTEx_ReceiveToIdle_DMA(usart_instance[i]->usart_handle, usart_instance[i]->recv_buff, usart_instance[i]->recv_buff_size);
@@ -113,6 +114,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
         }
     }
 }
+
 
 /**
  * @brief 当串口发送/接收出现错误时,会调用此函数,此时这个函数要做的就是重新启动接收
