@@ -12,7 +12,6 @@
 #include "usart.h"
 #include "YS_protocol.h"
 #include "daemon.h"
-#include "bsp_log.h"
 
 static MotorData_t recv_data;
 static USARTInstance *YS_usart_instance;
@@ -42,7 +41,7 @@ static void VisionOfflineCallback(void *id)
 }
 
 /* 视觉通信初始化 */
-MOTOR_recv *VisionInit(UART_HandleTypeDef *_handle)
+MOTOR_recv *YSInit(UART_HandleTypeDef *_handle)
 {
     USART_Init_Config_s conf;
     conf.module_callback = DecodeYS;
@@ -61,7 +60,7 @@ MOTOR_recv *VisionInit(UART_HandleTypeDef *_handle)
     return &recv_data;
 }
 
-void VisionSend(MOTOR_send *send)
+void YSSend(MOTOR_send *send)
 {
     modify_data(send);
     

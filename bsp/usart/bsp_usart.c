@@ -100,7 +100,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
     for (uint8_t i = 0; i < idx; ++i)
     { // find the instance which is being handled
-    { // 两者相等说明这是要找的实例
+    // 两者相等说明这是要找的实例
         if (huart == usart_instance[i]->usart_handle )
         {
             if (usart_instance[i]->module_callback != NULL) // 回调函数不为空就调用

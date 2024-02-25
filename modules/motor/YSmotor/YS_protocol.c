@@ -9,13 +9,12 @@
  *
  */
 
-#include "YS_protocol.h"
+//#include "YS_protocol.h"
 #include "crc8.h"
 #include "crc16.h"
 #include "crc_ccitt.h"
 #include "memory.h"
 #include "moto_control.h"
-#include "stdio.h"
 
 #define SATURATE(_IN, _MIN, _MAX) {\
  if (_IN < _MIN)\

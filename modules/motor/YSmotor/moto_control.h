@@ -2,7 +2,7 @@
 #define __MOTO_CONTROL_H
 
 #include <stdio.h>
-#include <stdint.h>
+//#include <stdint.h>
 #include "YS_protocol.h"
 #include "bsp_usart.h"
 
@@ -33,14 +33,6 @@ typedef struct
     int16_t K_W;                // 关节速度系数 x1024  5+10 描述
 
 } YSMotorInstance;
-
-typedef struct 
-{
-
-}
-{
-    /* data */
-};
 
 
 typedef struct
@@ -181,7 +173,7 @@ typedef struct
 } MOTOR_recv;
 
 
-MOTOR_recv *VisionInit(UART_HandleTypeDef *_handle);
+MOTOR_recv *YSInit(UART_HandleTypeDef *_handle);
 
 int modify_data(MOTOR_send *motor_s);
 int extract_data(MOTOR_recv *motor_r);
@@ -190,6 +182,6 @@ int extract_data(MOTOR_recv *motor_r);
  *
  * @param send 电机需要的数据
  */
-void YSmoto_sdata(uint8_t id,uint8_t mode, float t,float w,float pos,float Kp,float kw,MOTOR_recv* moto_s)
-
+void YSmoto_sdata(uint8_t id,uint8_t mode, float t,float w,float pos,float Kp,float kw,MOTOR_send* motor_s);
+void YSSend(MOTOR_send *send);
 #endif
