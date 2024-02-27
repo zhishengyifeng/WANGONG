@@ -4,6 +4,7 @@
 #include "stdlib.h"
 #include "bsp_dwt.h"
 #include "bsp_log.h"
+#include "cybergear.h"
 
 /* can instance ptrs storage, used for recv callback */
 // 在CAN产生接收中断会遍历数组,选出hcan和rxid与发生中断的实例相同的那个,调用其回调函数
@@ -80,7 +81,10 @@ CANInstance *CANRegister(CAN_Init_Config_s *config)
     memset(instance, 0, sizeof(CANInstance));                           // 分配的空间未必是0,所以要先清空
     // 进行发送报文的配置
     instance->txconf.StdId = config->tx_id; // 发送id
-    instance->txconf.IDE = CAN_ID_STD;      // 使用标准id,扩展id则使用CAN_ID_EXT(目前没有需求)
+    if (config->ide == IDE_STDID)   // 标准id使用CAN_ID_STD,扩展id则使用CAN_ID_EXT
+        instance->txconf.IDE = CAN_ID_STD;      
+    else
+        instance->txconf.IDE = CAN_ID_EXT;
     instance->txconf.RTR = CAN_RTR_DATA;    // 发送数据帧
     instance->txconf.DLC = 0x08;            // 默认发送长度为8
     // 设置回调函数和接收发送id
@@ -148,15 +152,33 @@ static void CANFIFOxCallback(CAN_HandleTypeDef *_hcan, uint32_t fifox)
     HAL_CAN_GetRxMessage(_hcan, fifox, &rxconf, can_rx_buff); // 从FIFO中获取数据
     for (size_t i = 0; i < idx; ++i)
     { // 两者相等说明这是要找的实例
-        if (_hcan == can_instance[i]->can_handle && rxconf.StdId == can_instance[i]->rx_id)
+        if (_hcan == can_instance[i]->can_handle)
         {
-            if (can_instance[i]->can_module_callback != NULL) // 回调函数不为空就调用
+            if ((can_instance[i]->ide == IDE_STDID && rxconf.StdId == can_instance[i]->rx_id))  //标准帧正常传递can实例
             {
-                can_instance[i]->rx_len = rxconf.DLC;                      // 保存接收到的数据长度
-                memcpy(can_instance[i]->rx_buff, can_rx_buff, rxconf.DLC); // 消息拷贝到对应实例
-                can_instance[i]->can_module_callback(can_instance[i]);     // 触发回调进行数据解析和处理
+                if (can_instance[i]->can_module_callback != NULL) // 回调函数不为空就调用
+                {
+                    can_instance[i]->rx_len = rxconf.DLC;                      // 保存接收到的数据长度
+                    memcpy(can_instance[i]->rx_buff, can_rx_buff, rxconf.DLC); // 消息拷贝到对应实例
+                    can_instance[i]->can_module_callback(can_instance[i]);     // 触发回调进行数据解析和处理
+                }
+                return;
             }
-            return;
+            else    //由于小米的垃圾协议，拓展帧里面也藏了数据，每次接收的拓展帧都不一样，所以拓展帧需要解ID
+            {
+                uint32_t Motor_Can_ID;                                // 接收数据电机ID 
+                Motor_Can_ID = MIMotorGetID(rxconf.ExtId);           // 首先获取回传电机ID信息
+                if (Motor_Can_ID == can_instance[i]->rx_id)
+                {
+                    if (can_instance[i]->can_module_callback != NULL)              // 回调函数不为空就调用
+                    {
+                        can_instance[i]->rxconf = rxconf;
+                        can_instance[i]->rx_len = rxconf.DLC;                      // 保存接收到的数据长度
+                        memcpy(can_instance[i]->rx_buff, can_rx_buff, rxconf.DLC); // 消息拷贝到对应实例
+                        can_instance[i]->can_module_callback(can_instance[i]);     // 触发回调进行数据解析和处理
+                    }
+                }
+            }
         }
     }
 }

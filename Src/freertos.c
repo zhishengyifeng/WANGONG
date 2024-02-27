@@ -182,13 +182,14 @@ void StartMOTORTASK(void const *argument)
 {
   static float motor_dt, motor_start;
   HTMotorControlInit();
-  while (1)
-  {
-    motor_start = DWT_GetTimeline_ms();
-    MotorControlTask();
-    motor_dt = DWT_GetTimeline_ms() - motor_start;
-    osDelay(1);
-  }
+  MIMotorControlInit();
+  // while (1)
+  // {
+  //   motor_start = DWT_GetTimeline_ms();
+  //   MotorControlTask();
+  //   motor_dt = DWT_GetTimeline_ms() - motor_start;
+  //   osDelay(1);
+  // }
 }
 
 void StartDAEMONTASK(void const *argument)

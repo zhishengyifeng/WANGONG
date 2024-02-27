@@ -56,14 +56,14 @@ static void HTMotorDecode(CANInstance *motor_can)
 
     measure->last_angle = measure->total_angle;
     tmp = (uint16_t)((rxbuff[1] << 8) | rxbuff[2]);
-    measure->total_angle = uint_to_float(tmp, P_MIN, P_MAX, 16);
+    measure->total_angle = uint_to_float(tmp, HT_P_MIN, HT_P_MAX, 16);
 
     tmp = (uint16_t)(rxbuff[3] << 4) | (rxbuff[4] >> 4);
-    measure->speed_rads = AverageFilter((uint_to_float(tmp, V_MIN, V_MAX, 12) - HT_SPEED_BIAS), measure->speed_buff, SPEED_BUFFER_SIZE);
+    measure->speed_rads = AverageFilter((uint_to_float(tmp, HT_V_MIN, HT_V_MAX, 12) - HT_SPEED_BIAS), measure->speed_buff, HT_SPEED_BUFFER_SIZE);
 
     tmp = (uint16_t)(((rxbuff[4] & 0x0f) << 8) | rxbuff[5]);
-    measure->real_current = CURRENT_SMOOTH_COEF * uint_to_float(tmp, T_MIN, T_MAX, 12) +
-                            (1 - CURRENT_SMOOTH_COEF) * measure->real_current;
+    measure->real_current = HT_CURRENT_SMOOTH_COEF * uint_to_float(tmp, HT_T_MIN, HT_T_MAX, 12) +
+                            (1 - HT_CURRENT_SMOOTH_COEF) * measure->real_current;
 }
 
 static void HTMotorLostCallback(void *motor_ptr)
@@ -77,11 +77,11 @@ static void HTMotorLostCallback(void *motor_ptr)
 static void HTMotorCalibEncoder(HTMotorInstance *motor)
 {
     uint16_t p, v, kp, kd, t;
-    p = float_to_uint(0, P_MIN, P_MAX, 16);
-    v = float_to_uint(0, V_MIN, V_MAX, 12);
-    kp = float_to_uint(0, KP_MIN, KP_MAX, 12);
-    kd = float_to_uint(0, KD_MIN, KD_MAX, 12);
-    t = float_to_uint(0, T_MIN, T_MAX, 12);
+    p = float_to_uint(0, HT_P_MIN, HT_P_MAX, 16);
+    v = float_to_uint(0, HT_V_MIN, HT_V_MAX, 12);
+    kp = float_to_uint(0, HT_KP_MIN, HT_KP_MAX, 12);
+    kd = float_to_uint(0, HT_KD_MIN, HT_KD_MAX, 12);
+    t = float_to_uint(0, HT_T_MIN, HT_T_MAX, 12);
 
     uint8_t *buf = motor->motor_can_instace->tx_buff;
     buf[0] = p >> 8;
@@ -99,6 +99,7 @@ static void HTMotorCalibEncoder(HTMotorInstance *motor)
     DWT_Delay(0.1);
     // HTMotorSetMode(CMD_MOTOR_MODE, motor);
 }
+
 HTMotorInstance *HTMotorInit(Motor_Init_Config_s *config)
 {
     HTMotorInstance *motor = (HTMotorInstance *)malloc(sizeof(HTMotorInstance));
@@ -186,10 +187,10 @@ void HTMotorTask(void const *argument)
         if (setting->motor_reverse_flag == MOTOR_DIRECTION_REVERSE)
             set *= -1;
 
-        LIMIT_MIN_MAX(set, T_MIN, T_MAX);
-        tmp = float_to_uint(set, T_MIN, T_MAX, 12);
+        LIMIT_MIN_MAX(set, HT_T_MIN, HT_T_MAX);
+        tmp = float_to_uint(set, HT_T_MIN, HT_T_MAX, 12);
         if (motor->stop_flag == MOTOR_STOP)
-            tmp = float_to_uint(0, T_MIN, T_MAX, 12);
+            tmp = float_to_uint(0, HT_T_MIN, HT_T_MAX, 12);
         motor_can->tx_buff[6] = (tmp >> 8);
         motor_can->tx_buff[7] = tmp & 0xff;
 

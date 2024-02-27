@@ -8,20 +8,20 @@
 #include "daemon.h"
 
 #define HT_MOTOR_CNT 4
-#define CURRENT_SMOOTH_COEF 0.9f
-#define SPEED_BUFFER_SIZE 5
+#define HT_CURRENT_SMOOTH_COEF 0.9f
+#define HT_SPEED_BUFFER_SIZE 5
 #define HT_SPEED_BIAS -0.0109901428f // 电机速度偏差,单位rad/s
 
-#define P_MIN -95.5f // Radians
-#define P_MAX 95.5f
-#define V_MIN -45.0f // Rad/s
-#define V_MAX 45.0f
-#define T_MIN -18.0f // N·m
-#define T_MAX 18.0f
-#define KP_MIN 0.0f // N-m/rad
-#define KP_MAX 500.0f
-#define KD_MIN 0.0f // N-m/rad/s
-#define KD_MAX 5.0f
+#define HT_P_MIN -95.5f // Radians
+#define HT_P_MAX 95.5f
+#define HT_V_MIN -45.0f // Rad/s
+#define HT_V_MAX 45.0f
+#define HT_T_MIN -18.0f // N·m
+#define HT_T_MAX 18.0f
+#define HT_KP_MIN 0.0f // N-m/rad
+#define HT_KP_MAX 500.0f
+#define HT_KD_MIN 0.0f // N-m/rad/s
+#define HT_KD_MAX 5.0f
 
 typedef struct // HT04
 {
@@ -29,7 +29,7 @@ typedef struct // HT04
     float last_angle;
 
     float speed_rads;
-    float speed_buff[SPEED_BUFFER_SIZE];
+    float speed_buff[HT_SPEED_BUFFER_SIZE];
 
     float real_current;
 

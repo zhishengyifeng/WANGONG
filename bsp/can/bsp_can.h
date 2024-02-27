@@ -10,12 +10,20 @@
 #define DEVICE_CAN_CNT 2           // 根据板子设定,F407IG有CAN1,CAN2,因此为2;F334只有一个,则设为1
 // 如果只有1个CAN,还需要把bsp_can.c中所有的hcan2变量改为hcan1(别担心,主要是总线和FIFO的负载均衡,不影响功能)
 
+typedef enum
+{
+    IDE_STDID = 0,
+    IDE_EXTID = 1
+} CAN_Init_IDE;
+
 /* can instance typedef, every module registered to CAN should have this variable */
 #pragma pack(1)
 typedef struct _
 {
     CAN_HandleTypeDef *can_handle; // can句柄
     CAN_TxHeaderTypeDef txconf;    // CAN报文发送配置
+    CAN_RxHeaderTypeDef rxconf;    // CAN报文接受配置
+    CAN_Init_IDE ide;              // can的IDE配置(默认STDID)
     uint32_t tx_id;                // 发送id
     uint32_t tx_mailbox;           // CAN消息填入的邮箱号
     uint8_t tx_buff[8];            // 发送缓存,发送消息长度可以通过CANSetDLC()设定,最大为8
@@ -32,6 +40,7 @@ typedef struct _
 typedef struct
 {
     CAN_HandleTypeDef *can_handle;              // can句柄
+    CAN_Init_IDE ide;                           // can的IDE配置(默认STDID)
     uint32_t tx_id;                             // 发送id
     uint32_t rx_id;                             // 接收id
     void (*can_module_callback)(CANInstance *); // 处理接收数据的回调函数

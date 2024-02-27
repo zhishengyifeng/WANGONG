@@ -8,6 +8,7 @@
 #include "ins_task.h"
 #include "HT04.h"
 #include "LK9025.h"
+#include "cybergear.h"
 #include "controller.h"
 #include "can_comm.h"
 #include "super_cap.h"
@@ -33,7 +34,8 @@ static CANCommInstance *ci;
 static SuperCapInstance *cap; // syh
 // 四个关节电机和两个驱动轮电机
 static HTMotorInstance *lf, *lb, *rf, *rb, *joint[4]; // 指针数组方便传参和调试
-static LKMotorInstance *l_driven, *r_driven, *driven[2];
+// static LKMotorInstance *l_driven, *r_driven, *driven[2];
+static MIMotorInstance *l_driven, *r_driven, *driven[2];
 // 两个腿的参数,0为左腿,1为右腿
 static LinkNPodParam l_side, r_side; // syh  phi5
 static ChassisParam chassis;
@@ -70,7 +72,9 @@ void BalanceInit()
     Motor_Init_Config_s joint_conf = {
         // 写一个,剩下的修改方向和id即可
         .can_init_config = {
-            .can_handle = &hcan1},
+            .can_handle = &hcan1,
+            .ide = IDE_STDID,
+        },
         .controller_param_init_config = {
             .angle_PID = {
                 .Kp = 0.3,
@@ -105,20 +109,22 @@ void BalanceInit()
 
     Motor_Init_Config_s driven_conf = {
         // 写一个,剩下的修改方向和id即可
-        .can_init_config.can_handle = &hcan2,
-        .controller_setting_init_config = {
-            .angle_feedback_source = MOTOR_FEED,
-            .speed_feedback_source = MOTOR_FEED,
-            .outer_loop_type = OPEN_LOOP,
-            .close_loop_type = OPEN_LOOP,
-            .motor_reverse_flag = MOTOR_DIRECTION_NORMAL,
+        .can_init_config = {
+            .can_handle = &hcan2,
+            .ide = IDE_EXTID},
+        .controller_param_init_config = {
+            .speed_PID = {
+                .Kp = 1,
+                .Ki = 0,
+                .Kd = 0.5,
+            },
         },
-        .motor_type = LK9025,
+        .motor_type = MI,
     };
-    driven_conf.can_init_config.tx_id = 1;
-    driven[LD] = l_driven = LKMotorInit(&driven_conf);
-    driven_conf.can_init_config.tx_id = 2;
-    driven[RD] = r_driven = LKMotorInit(&driven_conf);
+    driven_conf.can_init_config.tx_id = 0x7F;
+    driven[LD] = l_driven = MIMotorInit(&driven_conf);
+    driven_conf.can_init_config.tx_id = 0x80;
+    driven[RD] = r_driven = MIMotorInit(&driven_conf);
 
     PID_Init_Config_s steer_p_pid_conf = {
         .Kp = 2,
@@ -192,7 +198,7 @@ static void EnableAllMotor() /* 打开所有电机 */
     for (uint8_t i = 0; i < JOINT_CNT; i++) // 打开关节电机
         HTMotorEnable(joint[i]);
     for (uint8_t i = 0; i < DRIVEN_CNT; i++) // 打开驱动电机
-        LKMotorEnable(driven[i]);
+        MIMotorEnable(driven[i]);
 }
 
 /* 切换底盘遥控器控制和云台双板控制 */
@@ -227,8 +233,13 @@ static void ResetChassis()
     chassis.dist = chassis.target_dist = 0;
     l_side.target_len = r_side.target_len = 0.24;
     // 撞墙时前后移动保证能重新站立,执行速度输入
-    LKMotorSetRef(l_driven, chassis_cmd_recv.vx * 2);
-    LKMotorSetRef(r_driven, -chassis_cmd_recv.vx * 2);
+    // LKMotorSetRef(l_driven, chassis_cmd_recv.vx * 2);
+    // LKMotorSetRef(r_driven, -chassis_cmd_recv.vx * 2);
+
+    float test_v = 0; // 测试用的速度，先给0，测试慢慢调
+    MIMotorSetRef(l_driven, chassis_cmd_recv.vx * 2 * test_v);
+    MIMotorSetRef(r_driven, -chassis_cmd_recv.vx * 2 * test_v);
+
     // 若关节完成复位,进入ready态
     if (abs(lf->measure.total_angle) < 0.05 && abs(lf->measure.total_angle) > 0.02 &&
         abs(lb->measure.total_angle) < 0.05 && abs(lb->measure.total_angle) > 0.02 &&
@@ -270,7 +281,7 @@ static void WokingStateSet()
         for (uint8_t i = 0; i < JOINT_CNT; i++)
             HTMotorStop(joint[i]);
         for (uint8_t i = 0; i < DRIVEN_CNT; i++)
-            LKMotorStop(driven[i]);
+            MIMotorStop(driven[i], 0); //还不知道清除错误位是干嘛的，先不清除
         return; // 关闭所有电机,发送的指令为零
     }
 
@@ -311,12 +322,12 @@ static void ParamAssemble()
     l_side.phi4 = -lf->measure.total_angle - LIMIT_LINK_RAD;
     l_side.phi1_w = -lb->measure.speed_rads;
     l_side.phi4_w = -lf->measure.speed_rads;
-    l_side.w_ecd = l_driven->measure.speed_rads;
+    l_side.w_ecd = l_driven->measure.Speed;
     r_side.phi1 = PI + LIMIT_LINK_RAD + rb->measure.total_angle;
     r_side.phi4 = rf->measure.total_angle - LIMIT_LINK_RAD;
     r_side.phi1_w = rb->measure.speed_rads;
     r_side.phi4_w = rf->measure.speed_rads;
-    r_side.w_ecd = -r_driven->measure.speed_rads;
+    r_side.w_ecd = -r_driven->measure.Speed;
 }
 
 /**
@@ -390,8 +401,12 @@ static void WattLimitSet() /* 设定运动模态的输出 */
     HTMotorSetRef(lb, 0.285f * l_side.T_back);
     HTMotorSetRef(rf, 0.285f * -r_side.T_front);
     HTMotorSetRef(rb, 0.285f * -r_side.T_back);
-    LKMotorSetRef(l_driven, 274.348 * l_side.T_wheel);
-    LKMotorSetRef(r_driven, 274.348 * -r_side.T_wheel);
+    // LKMotorSetRef(l_driven, 274.348 * l_side.T_wheel);
+    // LKMotorSetRef(r_driven, 274.348 * -r_side.T_wheel);
+
+    float test_v = 0; // 测试用的速度，先给0，测试慢慢调
+    MIMotorSetRef(l_driven, 274.348 * l_side.T_wheel * test_v);
+    MIMotorSetRef(r_driven, 274.348 * -r_side.T_wheel * test_v);
 }
 
 // 裁判系统,双板通信,电容功率控制等
