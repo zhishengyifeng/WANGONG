@@ -14,6 +14,7 @@
   ****************************(C)SWJTU_ROBOTCON****************************
   **/
 #include "main.h"
+#include "memory.h"
 #include "stdlib.h"
 #include "user_lib.h"
 #include "cmsis_os.h"
@@ -21,6 +22,8 @@
 #include "daemon.h"
 #include "can.h"
 #include "cybergear.h"
+#include "string.h"
+#include "stdlib.h"
 
 // CAN_RxHeaderTypeDef rxMsg;//发送接收结构体
 // CAN_TxHeaderTypeDef txMsg;//发送配置结构体

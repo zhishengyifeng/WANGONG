@@ -13,10 +13,14 @@
   @endverbatim
   ****************************(C)SWJTU_ROBOTCON****************************
   **/
-#include "main.h"
-#include "can.h"
-#include "motor_def.h"
+
+#ifndef CYBERGEAR_H
+#define CYBERGEAR_H
+
+#include <stdint.h>
 #include "bsp_can.h"
+#include "controller.h"
+#include "motor_def.h"
 #include "daemon.h"
 
 // 控制参数最值，谨慎更改
@@ -148,3 +152,5 @@ extern uint32_t MIMotorGetID(uint32_t CAN_ID_Frame);
 MIMotorInstance *MIMotorInit(Motor_Init_Config_s *config);
 void MIMotorControlInit(void);
 void MIMotorSetRef(MIMotorInstance *motor, float ref);
+
+#endif
