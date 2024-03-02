@@ -25,9 +25,6 @@
 #include "string.h"
 #include "stdlib.h"
 
-// CAN_RxHeaderTypeDef rxMsg;//发送接收结构体
-// CAN_TxHeaderTypeDef txMsg;//发送配置结构体
-CANInstance *motor_can;
 uint8_t byte[4];              // 转换临时数据
 uint32_t send_mail_box = {0}; // NONE
 
@@ -96,27 +93,27 @@ static int float_to_uint(float x, float x_min, float x_max, int bits)
  */
 static void MIMotorSetParameter(MIMotorInstance *Motor, uint16_t Index, float Value, char Value_type)
 {
-  motor_can->txconf.ExtId = MI_Communication_Type_SetSingleParameter << 24 | Master_CAN_ID << 8 | Motor->measure.CAN_ID;
-  motor_can->tx_buff[0] = Index;
-  motor_can->tx_buff[1] = Index >> 8;
-  motor_can->tx_buff[2] = 0x00;
-  motor_can->tx_buff[3] = 0x00;
+  Motor->motor_can_instace->txconf.ExtId = MI_Communication_Type_SetSingleParameter << 24 | Master_CAN_ID << 8 | Motor->measure.CAN_ID;
+  Motor->motor_can_instace->tx_buff[0] = Index;
+  Motor->motor_can_instace->tx_buff[1] = Index >> 8;
+  Motor->motor_can_instace->tx_buff[2] = 0x00;
+  Motor->motor_can_instace->tx_buff[3] = 0x00;
   if (Value_type == 'f')
   {
     Float_to_Byte(Value);
-    motor_can->tx_buff[4] = byte[3];
-    motor_can->tx_buff[5] = byte[2];
-    motor_can->tx_buff[6] = byte[1];
-    motor_can->tx_buff[7] = byte[0];
+    Motor->motor_can_instace->tx_buff[4] = byte[3];
+    Motor->motor_can_instace->tx_buff[5] = byte[2];
+    Motor->motor_can_instace->tx_buff[6] = byte[1];
+    Motor->motor_can_instace->tx_buff[7] = byte[0];
   }
   else if (Value_type == 's')
   {
-    motor_can->tx_buff[4] = (uint8_t)Value;
-    motor_can->tx_buff[5] = 0x00;
-    motor_can->tx_buff[6] = 0x00;
-    motor_can->tx_buff[7] = 0x00;
+    Motor->motor_can_instace->tx_buff[4] = (uint8_t)Value;
+    Motor->motor_can_instace->tx_buff[5] = 0x00;
+    Motor->motor_can_instace->tx_buff[6] = 0x00;
+    Motor->motor_can_instace->tx_buff[7] = 0x00;
   }
-  CANTransmit(motor_can, 0.5);
+  CANTransmit(Motor->motor_can_instace, 0.5);
 }
 
 /**
@@ -150,12 +147,12 @@ static void MIMotorDataHandler(MIMotorInstance *Motor, uint8_t DataFrame[8], uin
  * @param[in]      id:  对应控制电机结构体
  * @retval         none
  */
-void MIMotorChack(uint8_t ID)
+void MIMotorChack(MIMotorInstance *Motor, uint8_t ID)
 {
   for (uint8_t i = 0; i < 8; ++i)
-    motor_can->tx_buff[i] = 0;
-  motor_can->txconf.ExtId = MI_Communication_Type_GetID << 24 | Master_CAN_ID << 8 | ID;
-  CANTransmit(motor_can, 0.5);
+    Motor->motor_can_instace->tx_buff[i] = 0;
+  Motor->motor_can_instace->txconf.ExtId = MI_Communication_Type_GetID << 24 | Master_CAN_ID << 8 | ID;
+  CANTransmit(Motor->motor_can_instace, 0.5);
 }
 
 /**
@@ -166,9 +163,9 @@ void MIMotorChack(uint8_t ID)
 void MIMotorEnable(MIMotorInstance *Motor)
 {
   for (uint8_t i = 0; i < 8; ++i)
-    motor_can->tx_buff[i] = 0;
-  motor_can->txconf.ExtId = MI_Communication_Type_MotorEnable << 24 | Master_CAN_ID << 8 | Motor->measure.CAN_ID;
-  CANTransmit(motor_can, 0.5);
+    Motor->motor_can_instace->tx_buff[i] = 0;
+  Motor->motor_can_instace->txconf.ExtId = MI_Communication_Type_MotorEnable << 24 | Master_CAN_ID << 8 | Motor->measure.CAN_ID;
+  CANTransmit(Motor->motor_can_instace, 0.5);
 }
 
 /**
@@ -180,10 +177,10 @@ void MIMotorEnable(MIMotorInstance *Motor)
 void MIMotorStop(MIMotorInstance *Motor, uint8_t clear_error)
 {
   for (uint8_t i = 0; i < 8; ++i)
-    motor_can->tx_buff[i] = 0;
-  motor_can->tx_buff[0] = clear_error; // 清除错误位设置
-  motor_can->txconf.ExtId = MI_Communication_Type_MotorStop << 24 | Master_CAN_ID << 8 | Motor->measure.CAN_ID;
-  CANTransmit(motor_can, 0.5);
+    Motor->motor_can_instace->tx_buff[i] = 0;
+  Motor->motor_can_instace->tx_buff[0] = clear_error; // 清除错误位设置
+  Motor->motor_can_instace->txconf.ExtId = MI_Communication_Type_MotorStop << 24 | Master_CAN_ID << 8 | Motor->measure.CAN_ID;
+  CANTransmit(Motor->motor_can_instace, 0.5);
 }
 
 /**
@@ -216,9 +213,9 @@ void MIMotorSetCurrent(MIMotorInstance *Motor, float Current)
 void MIMotorSetZeropos(MIMotorInstance *Motor)
 {
   for (uint8_t i = 0; i < 8; ++i)
-    motor_can->tx_buff[i] = 0;
-  motor_can->txconf.ExtId = MI_Communication_Type_SetPosZero << 24 | Master_CAN_ID << 8 | Motor->measure.CAN_ID;
-  CANTransmit(motor_can, 0.5);
+    Motor->motor_can_instace->tx_buff[i] = 0;
+  Motor->motor_can_instace->txconf.ExtId = MI_Communication_Type_SetPosZero << 24 | Master_CAN_ID << 8 | Motor->measure.CAN_ID;
+  CANTransmit(Motor->motor_can_instace, 0.5);
 }
 
 /**
@@ -230,10 +227,10 @@ void MIMotorSetZeropos(MIMotorInstance *Motor)
 void MIMotorSetCANID(MIMotorInstance *Motor, uint8_t CAN_ID)
 {
   for (uint8_t i = 0; i < 8; ++i)
-    motor_can->tx_buff[i] = 0;
-  motor_can->txconf.ExtId = MI_Communication_Type_CanID << 24 | CAN_ID << 16 | Master_CAN_ID << 8 | Motor->measure.CAN_ID;
+    Motor->motor_can_instace->tx_buff[i] = 0;
+  Motor->motor_can_instace->txconf.ExtId = MI_Communication_Type_CanID << 24 | CAN_ID << 16 | Master_CAN_ID << 8 | Motor->measure.CAN_ID;
   Motor->measure.CAN_ID = CAN_ID; // 将新的ID导入电机结构体
-  CANTransmit(motor_can, 0.5);
+  CANTransmit(Motor->motor_can_instace, 0.5);
 }
 
 /**
@@ -246,11 +243,11 @@ void MIMotorSetCANID(MIMotorInstance *Motor, uint8_t CAN_ID)
  */
 void _MIMotorInit(MIMotorInstance *Motor, uint8_t Can_Id, uint8_t mode)
 {
-  motor_can->txconf.StdId = 0;          // 配置CAN发送：标准帧清零
-  motor_can->txconf.ExtId = 0;          // 配置CAN发送：扩展帧清零
-  motor_can->txconf.IDE = CAN_ID_EXT;   // 配置CAN发送：扩展帧
-  motor_can->txconf.RTR = CAN_RTR_DATA; // 配置CAN发送：数据帧
-  motor_can->txconf.DLC = 0x08;         // 配置CAN发送：数据长度
+  Motor->motor_can_instace->txconf.StdId = 0;          // 配置CAN发送：标准帧清零
+  Motor->motor_can_instace->txconf.ExtId = 0;          // 配置CAN发送：扩展帧清零
+  Motor->motor_can_instace->txconf.IDE = CAN_ID_EXT;   // 配置CAN发送：扩展帧
+  Motor->motor_can_instace->txconf.RTR = CAN_RTR_DATA; // 配置CAN发送：数据帧
+  Motor->motor_can_instace->txconf.DLC = 0x08;         // 配置CAN发送：数据长度
 
   Motor->measure.CAN_ID = Can_Id;       // ID设置
   MIMotorSetMode(Motor, mode);          // 设置电机模式
@@ -270,16 +267,16 @@ void _MIMotorInit(MIMotorInstance *Motor, uint8_t Can_Id, uint8_t mode)
 void MIMotorControlMode(MIMotorInstance *Motor, float torque, float MechPosition, float speed, float kp, float kd)
 {
   // 装填发送数据
-  motor_can->tx_buff[0] = float_to_uint(MechPosition, MI_P_MIN, MI_P_MAX, 16) >> 8;
-  motor_can->tx_buff[1] = float_to_uint(MechPosition, MI_P_MIN, MI_P_MAX, 16);
-  motor_can->tx_buff[2] = float_to_uint(speed, MI_V_MIN, MI_V_MAX, 16) >> 8;
-  motor_can->tx_buff[3] = float_to_uint(speed, MI_V_MIN, MI_V_MAX, 16);
-  motor_can->tx_buff[4] = float_to_uint(kp, MI_KP_MIN, MI_KP_MAX, 16) >> 8;
-  motor_can->tx_buff[5] = float_to_uint(kp, MI_KP_MIN, MI_KP_MAX, 16);
-  motor_can->tx_buff[6] = float_to_uint(kd, MI_KD_MIN, MI_KD_MAX, 16) >> 8;
-  motor_can->tx_buff[7] = float_to_uint(kd, MI_KD_MIN, MI_KD_MAX, 16);
-  motor_can->txconf.ExtId = MI_Communication_Type_MotionControl << 24 | float_to_uint(torque, MI_T_MIN, MI_T_MAX, 16) << 8 | Motor->measure.CAN_ID; // 装填扩展帧数据
-  CANTransmit(motor_can, 0.5);
+  Motor->motor_can_instace->tx_buff[0] = float_to_uint(MechPosition, MI_P_MIN, MI_P_MAX, 16) >> 8;
+  Motor->motor_can_instace->tx_buff[1] = float_to_uint(MechPosition, MI_P_MIN, MI_P_MAX, 16);
+  Motor->motor_can_instace->tx_buff[2] = float_to_uint(speed, MI_V_MIN, MI_V_MAX, 16) >> 8;
+  Motor->motor_can_instace->tx_buff[3] = float_to_uint(speed, MI_V_MIN, MI_V_MAX, 16);
+  Motor->motor_can_instace->tx_buff[4] = float_to_uint(kp, MI_KP_MIN, MI_KP_MAX, 16) >> 8;
+  Motor->motor_can_instace->tx_buff[5] = float_to_uint(kp, MI_KP_MIN, MI_KP_MAX, 16);
+  Motor->motor_can_instace->tx_buff[6] = float_to_uint(kd, MI_KD_MIN, MI_KD_MAX, 16) >> 8;
+  Motor->motor_can_instace->tx_buff[7] = float_to_uint(kd, MI_KD_MIN, MI_KD_MAX, 16);
+  Motor->motor_can_instace->txconf.ExtId = MI_Communication_Type_MotionControl << 24 | float_to_uint(torque, MI_T_MIN, MI_T_MAX, 16) << 8 | Motor->measure.CAN_ID; // 装填扩展帧数据
+  CANTransmit(Motor->motor_can_instace, 0.5);
 }
 
 /*****************************回调函数 负责接回传信息 可转移至别处*****************************/

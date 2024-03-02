@@ -138,7 +138,7 @@ typedef struct
     uint32_t lost_cnt;
 } MIMotorInstance;
 
-extern void MIMotorChack(uint8_t ID);
+extern void MIMotorChack(MIMotorInstance *Motor, uint8_t ID);
 extern void MIMotorEnable(MIMotorInstance *Motor);
 extern void MIMotorStop(MIMotorInstance *Motor, uint8_t clear_error);
 extern void MIMotorSetMode(MIMotorInstance *Motor, uint8_t Mode);

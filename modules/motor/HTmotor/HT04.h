@@ -18,10 +18,10 @@
 #define HT_V_MAX 45.0f
 #define HT_T_MIN -18.0f // N·m
 #define HT_T_MAX 18.0f
-#define HT_KP_MIN 0.0f // N-m/rad  
+#define HT_KP_MIN 0.0f // N-m/rad
 #define HT_KP_MAX 500.0f
 #define HT_KD_MIN 0.0f // N-m/rad/s
-#define HT_KD_MAX 5.0f  
+#define HT_KD_MAX 5.0f
 
 typedef struct // HT04
 {

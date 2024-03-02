@@ -154,15 +154,18 @@ static void CANFIFOxCallback(CAN_HandleTypeDef *_hcan, uint32_t fifox)
     { // 两者相等说明这是要找的实例
         if (_hcan == can_instance[i]->can_handle)
         {
-            if ((can_instance[i]->ide == IDE_STDID && rxconf.StdId == can_instance[i]->rx_id))  //标准帧正常传递can实例
+            if (can_instance[i]->ide == IDE_STDID)  //标准帧正常传递can实例
             {
-                if (can_instance[i]->can_module_callback != NULL) // 回调函数不为空就调用
+                if (rxconf.StdId == can_instance[i]->rx_id)
                 {
-                    can_instance[i]->rx_len = rxconf.DLC;                      // 保存接收到的数据长度
-                    memcpy(can_instance[i]->rx_buff, can_rx_buff, rxconf.DLC); // 消息拷贝到对应实例
-                    can_instance[i]->can_module_callback(can_instance[i]);     // 触发回调进行数据解析和处理
+                    if (can_instance[i]->can_module_callback != NULL) // 回调函数不为空就调用
+                    {
+                        can_instance[i]->rx_len = rxconf.DLC;                      // 保存接收到的数据长度
+                        memcpy(can_instance[i]->rx_buff, can_rx_buff, rxconf.DLC); // 消息拷贝到对应实例
+                        can_instance[i]->can_module_callback(can_instance[i]);     // 触发回调进行数据解析和处理
+                    }
+                    return;
                 }
-                return;
             }
             else    //由于小米的垃圾协议，拓展帧里面也藏了数据，每次接收的拓展帧都不一样，所以拓展帧需要解ID
             {
@@ -177,6 +180,7 @@ static void CANFIFOxCallback(CAN_HandleTypeDef *_hcan, uint32_t fifox)
                         memcpy(can_instance[i]->rx_buff, can_rx_buff, rxconf.DLC); // 消息拷贝到对应实例
                         can_instance[i]->can_module_callback(can_instance[i]);     // 触发回调进行数据解析和处理
                     }
+                    return;
                 }
             }
         }

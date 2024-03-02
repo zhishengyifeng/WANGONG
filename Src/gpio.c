@@ -103,6 +103,15 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(CS1_GYRO_GPIO_Port, &GPIO_InitStruct);
 
+  /*LED灯*/
+	GPIO_InitStruct.Pin = LED_R_Pin | LED_G_Pin | LED_B_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(LED_GPIO_Port, &GPIO_InitStruct);
+	// 由原理图可知，引脚拉低，LED亮，所以一开始全部拉高电平
+	HAL_GPIO_WritePin(LED_GPIO_Port, LED_R_Pin | LED_G_Pin | LED_B_Pin, GPIO_PIN_SET);
+
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI3_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI3_IRQn);

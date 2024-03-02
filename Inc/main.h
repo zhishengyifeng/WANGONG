@@ -61,15 +61,13 @@ void Error_Handler(void);
 #define MAG_RST_GPIO_Port GPIOG
 #define IMU_TEMP_Pin GPIO_PIN_6
 #define IMU_TEMP_GPIO_Port GPIOF
-#define LED_R_Pin GPIO_PIN_12
-#define LED_R_GPIO_Port GPIOH
 #define INT_MAG_Pin GPIO_PIN_3
 #define INT_MAG_GPIO_Port GPIOG
 #define INT_MAG_EXTI_IRQn EXTI3_IRQn
+#define LED_GPIO_Port GPIOH
+#define LED_R_Pin GPIO_PIN_12
 #define LED_G_Pin GPIO_PIN_11
-#define LED_G_GPIO_Port GPIOH
 #define LED_B_Pin GPIO_PIN_10
-#define LED_B_GPIO_Port GPIOH
 #define BUZZER_Pin GPIO_PIN_14
 #define BUZZER_GPIO_Port GPIOD
 #define KEY_Pin GPIO_PIN_0
