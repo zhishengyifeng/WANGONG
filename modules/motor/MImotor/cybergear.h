@@ -73,7 +73,7 @@
 #define MI_Motor_Error 0x00
 #define MI_Motor_OK 0X01
 
-#define MI_MOTOR_CNT 4
+#define MI_MOTOR_CNT 2
 
 enum CONTROL_MODE // 控制模式定义
 {

@@ -295,7 +295,8 @@ static void MIMotorDecode(CANInstance *motor_can)
   DaemonReload(motor->motor_daemon);
   measure->feed_dt = DWT_GetDeltaT(&measure->feed_cnt);
   
-  if (motor_can->rxconf.ExtId >> 24 != 0) // 检查是否为广播模式
+  // if (motor_can->rxconf.ExtId >> 24 != 0) // 检查是否为广播模式
+  if (1)
     MIMotorDataHandler(motor, motor->motor_can_instace->rx_buff, motor_can->rx_id);
   else
     motor->measure.MCU_ID = motor->motor_can_instace->rx_buff[0];

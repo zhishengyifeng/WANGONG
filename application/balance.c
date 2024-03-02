@@ -122,8 +122,10 @@ void BalanceInit()
         .motor_type = MI,
     };
     driven_conf.can_init_config.tx_id = 0x7F;
+    driven_conf.can_init_config.rx_id = 0x7F;
     driven[LD] = l_driven = MIMotorInit(&driven_conf);
     driven_conf.can_init_config.tx_id = 0x80;
+    driven_conf.can_init_config.rx_id = 0x80;
     driven[RD] = r_driven = MIMotorInit(&driven_conf);
 
     PID_Init_Config_s steer_p_pid_conf = {

@@ -22,7 +22,6 @@ typedef struct _
 {
     CAN_HandleTypeDef *can_handle; // can句柄
     CAN_TxHeaderTypeDef txconf;    // CAN报文发送配置
-    CAN_RxHeaderTypeDef rxconf;    // CAN报文接受配置
     CAN_Init_IDE ide;              // can的IDE配置(默认STDID)
     uint32_t tx_id;                // 发送id
     uint32_t tx_mailbox;           // CAN消息填入的邮箱号

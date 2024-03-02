@@ -175,7 +175,6 @@ static void CANFIFOxCallback(CAN_HandleTypeDef *_hcan, uint32_t fifox)
                 {
                     if (can_instance[i]->can_module_callback != NULL)              // 回调函数不为空就调用
                     {
-                        can_instance[i]->rxconf = rxconf;
                         can_instance[i]->rx_len = rxconf.DLC;                      // 保存接收到的数据长度
                         memcpy(can_instance[i]->rx_buff, can_rx_buff, rxconf.DLC); // 消息拷贝到对应实例
                         can_instance[i]->can_module_callback(can_instance[i]);     // 触发回调进行数据解析和处理
