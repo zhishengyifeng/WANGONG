@@ -249,7 +249,7 @@ void _MIMotorInit(MIMotorInstance *Motor, uint8_t Can_Id, uint8_t mode)
   Motor->motor_can_instace->txconf.RTR = CAN_RTR_DATA; // 配置CAN发送：数据帧
   Motor->motor_can_instace->txconf.DLC = 0x08;         // 配置CAN发送：数据长度
 
-  Motor->measure.CAN_ID = Can_Id;       // ID设置
+  Motor->measure.CAN_ID = MIMotorGetID(Can_Id);       // ID设置
   MIMotorSetMode(Motor, mode);          // 设置电机模式
   MIMotorEnable(Motor);                 // 使能电机
 }
@@ -326,6 +326,7 @@ MIMotorInstance *MIMotorInit(Motor_Init_Config_s *config)
 
     config->can_init_config.can_module_callback = MIMotorDecode;
     config->can_init_config.id = motor;
+    config->can_init_config.rx_id = (config->can_init_config.rx_id << 8) | 0x02000000;//查找所有用到motor->motor_can_instace.rx_id的地方，必须改为motor->measure.CAN_ID
     motor->motor_can_instace = CANRegister(&config->can_init_config);
 
     Daemon_Init_Config_s conf = {

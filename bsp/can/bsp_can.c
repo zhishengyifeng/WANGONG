@@ -32,18 +32,20 @@ static void CANAddFilter(CANInstance *_instance)
     CAN_FilterTypeDef can_filter_conf;
     static uint8_t can1_filter_idx = 0, can2_filter_idx = 14;                                                 // 0-13给can1用,14-27给can2用
 
-    can_filter_conf.FilterMode = CAN_FILTERMODE_IDLIST;                                                       // 使用id list模式,即只有将rxid添加到过滤器中才会接收到,其他报文会被过滤
-    
     if (_instance->ide == IDE_STDID)                                                                          // 如果为标准帧
     {
+        can_filter_conf.FilterMode = CAN_FILTERMODE_IDLIST;                                                   // 使用id list模式,即只有将rxid添加到过滤器中才会接收到,其他报文会被过滤
         can_filter_conf.FilterScale = CAN_FILTERSCALE_16BIT;                                                  // 使用16位id模式,即只有低16位有效
         can_filter_conf.FilterIdLow = _instance->rx_id << 5;                                                  // 过滤器寄存器的低16位,因为使用STDID,所以只有低11位有效,高5位要填0
     }
     else                                                                                                      // 如果为拓展帧
     {
+        can_filter_conf.FilterMode = CAN_FILTERMODE_IDMASK;                                                   // 使用id mask模式，对应位匹配就可接受
         can_filter_conf.FilterScale = CAN_FILTERSCALE_32BIT;                                                  // 使用32位id模式,即32位有效
         can_filter_conf.FilterIdHigh = (_instance->rx_id >> 13) & 0xFFFF;                                     // 过滤器寄存器的高16位，右移13位以获得扩展ID的高16位
         can_filter_conf.FilterIdLow = (_instance->rx_id << 3) & 0xFFFF;                                       // 过滤器寄存器的低16位，左移3位以获得扩展ID的低16位
+        can_filter_conf.FilterMaskIdHigh = 0xF807;  // 1111 1000 0000 0111                                    // 1~5位为反馈标识符必须匹配 6~13位为各种标志位不定 14~16位为电机CAN_ID的前三位必须匹配
+        can_filter_conf.FilterMaskIdLow = 0xFFFF;   // 1111 1111 1111 1111                                    // 17~21位为电机CAN_ID的后五位必须匹配 22~29位为主机CAN_ID必须匹配 30~32位为空给1
     }
     
     can_filter_conf.FilterFIFOAssignment = (_instance->tx_id & 1) ? CAN_RX_FIFO0 : CAN_RX_FIFO1;              // 奇数id的模块会被分配到FIFO0,偶数id的模块会被分配到FIFO1
