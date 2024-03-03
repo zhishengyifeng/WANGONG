@@ -397,27 +397,6 @@ static void CalcLQR()
     r_side.T_hip = T[3];
 }
 
-static void SynthesizeMotion() /* 腿部控制:抗劈叉; 轮子控制:转向 */
-{
-    // 跟随云台yaw
-    if (chassis_cmd_recv.chassis_mode == CHASSIS_FOLLOW_GIMBAL_YAW ||
-        chassis_cmd_recv.chassis_mode == CHASSIS_FREE_DEBUG) // 角度环
-    {
-        float p_ref = PIDCalculate(&steer_p_pid, chassis_cmd_recv.offset_angle, 0);
-        PIDCalculate(&steer_v_pid, chassis.wz, p_ref); // 双环
-    }
-    else if (chassis_cmd_recv.chassis_mode == CHASSIS_ROTATE) // 速度环
-        PIDCalculate(&steer_v_pid, chassis.wz, 4);
-
-    l_side.T_wheel -= steer_v_pid.Output;
-    r_side.T_wheel += steer_v_pid.Output;
-
-    volatile static float swerving_speed_ff, ff_coef = 3;
-    swerving_speed_ff = ff_coef * steer_v_pid.Output; // 用于抗劈叉的前馈
-    PIDCalculate(&anti_crash_pid, l_side.phi5 - r_side.phi5, 0);
-    l_side.T_hip += anti_crash_pid.Output - swerving_speed_ff;
-    r_side.T_hip -= anti_crash_pid.Output - swerving_speed_ff;
-}
 
 static void LegControl() /* 腿长控制和Roll补偿 */
 {
@@ -425,24 +404,23 @@ static void LegControl() /* 腿长控制和Roll补偿 */
     l_side.target_len -= roll_compensate_pid.Output;
     r_side.target_len += roll_compensate_pid.Output;
 
-    static float gravity_comp = 73;
-    static float roll_extra_comp_p = 300;
-    float roll_comp = roll_extra_comp_p * chassis.roll;
-    l_side.F_leg = PIDCalculate(&leglen_pid_l, l_side.height, l_side.target_len) + gravity_comp + roll_comp;
-    r_side.F_leg = PIDCalculate(&leglen_pid_r, r_side.height, r_side.target_len) + gravity_comp + 8 - roll_comp;
-
-    // @todo: 还需要加和roll的纯Kp项
-    
+    //腿部质心位置系数认为是1/2
+    float gravity_comp =0.5 * (Mb+Ml)*9.8 ;
+    l_side.inertial = 0.5 * (Mb+Ml)*l_side.leg_len*chassis.wz*chassis.vel/(2*Rl);
+    r_side.inertial = 0.5 * (Mb+Ml)*r_side.leg_len*chassis.wz*chassis.vel/(2*Rl);
+    //左右两轮的轮速预测未添加,theta的预测还在考虑中
+    l_side.F_leg = PIDCalculate(&leglen_pid_l, l_side.height, l_side.target_len) + gravity_comp - l_side.inertial;
+    r_side.F_leg = PIDCalculate(&leglen_pid_r, r_side.height, r_side.target_len) + gravity_comp + r_side.inertial;  
 }
 
 static void WattLimitSet() /* 设定运动模态的输出 */
 {
     HTMotorSetRef(lf, 0.285f * l_side.T_front); // 根据扭矩常数计算得到的系数
     HTMotorSetRef(lb, 0.285f * l_side.T_back);
-    HTMotorSetRef(rf, 0.285f * -r_side.T_front);
-    HTMotorSetRef(rb, 0.285f * -r_side.T_back);
+    HTMotorSetRef(rf, 0.285f * r_side.T_front);
+    HTMotorSetRef(rb, 0.285f * r_side.T_back);
     LKMotorSetRef(l_driven, 274.348 * l_side.T_wheel);
-    LKMotorSetRef(r_driven, 274.348 * -r_side.T_wheel);
+    LKMotorSetRef(r_driven, 274.348 * r_side.T_wheel);
 }
 
 // 裁判系统,双板通信,电容功率控制等
@@ -500,10 +478,8 @@ void BalanceTask()
     SpeedEstimation(&l_side, &r_side, &chassis, imu_data, del_t);
 
     // 根据单杆计算处的角度和杆长,计算反馈增益
-    CalcLQR(&l_side);
-    CalcLQR(&r_side);
-    // 转向和抗劈叉
-    SynthesizeMotion();
+    CalcLQR();
+  
     // 腿长控制,保持机体水平
     LegControl();
     // VMC映射成关节输出

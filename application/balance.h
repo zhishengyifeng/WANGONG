@@ -4,6 +4,9 @@
 #define THIGH_LEN 0.14f           // 大腿
 #define JOINT_DISTANCE 0.108f     // 关节间距
 #define WHEEL_RADIUS 0.078f       // 轮子半径
+#define Mb 5.5f                    // 机体质量
+#define Ml 1.25f                    // 腿部质量
+#define Rl 0.265f                    // 轮子间间距/2
 #define LIMIT_LINK_RAD 0.15149458 // 初始限位角度,见ParamAssemble
 #define WHEEL_DISTANCE 0.48f      // 轮子间距
 #define BALANCE_GRAVITY_BIAS 0
@@ -11,6 +14,7 @@
 #define MAX_ACC_REF 0.7f
 #define MAX_DIST_TRACK 0.1f
 #define MAX_VEL_TRACK 0.5f
+
 
 #define CENTER_IMU_R 0.13f // IMU距离中心的距离
 #define CENTER_IMU_W 0.11f
@@ -55,6 +59,7 @@ typedef struct
     float height, height_v;
     float F_leg, T_hip;
     float target_len;
+    float inertial;
 
     float coord[6]; // xb yb xc yc xd yd
 
