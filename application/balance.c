@@ -114,7 +114,7 @@ void BalanceInit()
             .ide = IDE_EXTID},
         .controller_param_init_config = {
             .speed_PID = {
-                .Kp = 1,
+                .Kp = 0,
                 .Ki = 0,
                 .Kd = 0.5,
             },
@@ -199,8 +199,8 @@ static void EnableAllMotor() /* 打开所有电机 */
 {
     for (uint8_t i = 0; i < JOINT_CNT; i++) // 打开关节电机
         HTMotorEnable(joint[i]);
-    for (uint8_t i = 0; i < DRIVEN_CNT; i++) // 打开驱动电机
-        MIMotorEnable(driven[i]);
+    // for (uint8_t i = 0; i < DRIVEN_CNT; i++) // 打开驱动电机
+    //     MIMotorEnable(driven[i]);
 }
 
 /* 切换底盘遥控器控制和云台双板控制 */
@@ -234,13 +234,12 @@ static void ResetChassis()
     // 复位时清空距离和腿长积累量,保证顺利站起
     chassis.dist = chassis.target_dist = 0;
     l_side.target_len = r_side.target_len = 0.24;
+
     // 撞墙时前后移动保证能重新站立,执行速度输入
     // LKMotorSetRef(l_driven, chassis_cmd_recv.vx * 2);
     // LKMotorSetRef(r_driven, -chassis_cmd_recv.vx * 2);
-
-    float test_v = 0; // 测试用的速度，先给0，测试慢慢调
-    MIMotorSetRef(l_driven, chassis_cmd_recv.vx * 2 * test_v);
-    MIMotorSetRef(r_driven, -chassis_cmd_recv.vx * 2 * test_v);
+    MIMotorSetRef(l_driven, chassis_cmd_recv.vx * 2);
+    MIMotorSetRef(r_driven, -chassis_cmd_recv.vx * 2);
 
     // 若关节完成复位,进入ready态
     if (abs(lf->measure.total_angle) < 0.05 && abs(lf->measure.total_angle) > 0.02 &&
@@ -278,14 +277,14 @@ static void WokingStateSet()
         ResetChassis();
         return;
     }
-    else if (chassis_cmd_recv.chassis_mode == CHASSIS_STOP) // 未收到遥控器和云台指令底盘进入急停
-    {
-        for (uint8_t i = 0; i < JOINT_CNT; i++)
-            HTMotorStop(joint[i]);
-        for (uint8_t i = 0; i < DRIVEN_CNT; i++)
-            MIMotorStop(driven[i], 0); //还不知道清除错误位是干嘛的，先不清除
-        return; // 关闭所有电机,发送的指令为零
-    }
+    // else if (chassis_cmd_recv.chassis_mode == CHASSIS_STOP) // 未收到遥控器和云台指令底盘进入急停
+    // {
+    //     for (uint8_t i = 0; i < JOINT_CNT; i++)
+    //         HTMotorStop(joint[i]);
+    //     for (uint8_t i = 0; i < DRIVEN_CNT; i++)
+    //         MIMotorStop(driven[i], 0); //还不知道清除错误位是干嘛的，先不清除
+    //     return; // 关闭所有电机,发送的指令为零
+    // }
 
     // 运动模式
     EnableAllMotor();
@@ -403,12 +402,11 @@ static void WattLimitSet() /* 设定运动模态的输出 */
     HTMotorSetRef(lb, 0.285f * l_side.T_back);
     HTMotorSetRef(rf, 0.285f * -r_side.T_front);
     HTMotorSetRef(rb, 0.285f * -r_side.T_back);
+
     // LKMotorSetRef(l_driven, 274.348 * l_side.T_wheel);
     // LKMotorSetRef(r_driven, 274.348 * -r_side.T_wheel);
-
-    float test_v = 0; // 测试用的速度，先给0，测试慢慢调
-    MIMotorSetRef(l_driven, 274.348 * l_side.T_wheel * test_v);
-    MIMotorSetRef(r_driven, 274.348 * -r_side.T_wheel * test_v);
+    MIMotorSetRef(l_driven, 274.348 * l_side.T_wheel);
+    MIMotorSetRef(r_driven, 274.348 * -r_side.T_wheel);
 }
 
 // 裁判系统,双板通信,电容功率控制等
