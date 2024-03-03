@@ -198,25 +198,45 @@ static void EnableAllMotor() /* 打开所有电机 */
 /* 切换底盘遥控器控制和云台双板控制 */
 static void ControlSwitch()
 { // 右侧拨杆向下,进入遥控器底盘控制,此时不响应云台控制指令
-    if (switch_is_down(rc_data->rc.switch_right) && RemoteControlIsOnline())
+    // if (switch_is_down(rc_data->rc.switch_right) && RemoteControlIsOnline())
+    // {
+    //     if (rc_data->rc.rocker_l1 < -600)
+    //     {
+    //         chassis_cmd_recv.chassis_mode = CHASSIS_RESET;
+    //         chassis_cmd_recv.vx = 0.5 * (float)rc_data[TEMP].rc.rocker_r1; // speed x, unit m/s
+    //     }
+    //     else // 设定值覆盖双板
+    //     {
+    //         chassis_cmd_recv.chassis_mode = CHASSIS_FREE_DEBUG;                        // 自由转动&前后
+    //         chassis_cmd_recv.vx = 0.002 * (float)rc_data[TEMP].rc.rocker_r1;           // speed x, unit m/s
+    //         chassis_cmd_recv.offset_angle = 0.001 * (float)rc_data[TEMP].rc.rocker_r_; // rotate? follow.
+    //         chassis_cmd_recv.delta_leglen = -0.0000015f * (float)rc_data[TEMP].rc.dial;
+    //     }
+    // }
+    // else if (CANCommIsOnline(ci) && !switch_is_down(rc_data->rc.switch_right))
+    //     chassis_cmd_recv = *(Chassis_Ctrl_Cmd_s *)CANCommGet(ci); // 获取云台板指令
+    // else
+    //     chassis_cmd_recv.chassis_mode = CHASSIS_STOP; // 皆离线,急停
+
+     if (switch_is_down(rc_data->rc.switch_right) && RemoteControlIsOnline())
     {
-        if (rc_data->rc.rocker_l1 < -600)
+         chassis_cmd_recv.chassis_mode = CHASSIS_STOP;
+         chassis_status = ROBOT_STOP;
+    }else if (switch_is_up(rc_data->rc.switch_right) && RemoteControlIsOnline())
+    {
+        chassis_cmd_recv.chassis_mode = CHASSIS_ROTATE;
+    }else                                                     //switch_is_mid(rc_data->rc.switch_right)
+    {
+        
+        if (chassis_status == ROBOT_STOP)
         {
             chassis_cmd_recv.chassis_mode = CHASSIS_RESET;
-            chassis_cmd_recv.vx = 0.5 * (float)rc_data[TEMP].rc.rocker_r1; // speed x, unit m/s
-        }
-        else // 设定值覆盖双板
+        }else
         {
-            chassis_cmd_recv.chassis_mode = CHASSIS_FREE_DEBUG;                        // 自由转动&前后
-            chassis_cmd_recv.vx = 0.002 * (float)rc_data[TEMP].rc.rocker_r1;           // speed x, unit m/s
-            chassis_cmd_recv.offset_angle = 0.001 * (float)rc_data[TEMP].rc.rocker_r_; // rotate? follow.
-            chassis_cmd_recv.delta_leglen = -0.0000015f * (float)rc_data[TEMP].rc.dial;
-        }
+            chassis_cmd_recv.chassis_mode = CHASSIS_FREE_DEBUG;
+        };
+        
     }
-    else if (CANCommIsOnline(ci) && !switch_is_down(rc_data->rc.switch_right))
-        chassis_cmd_recv = *(Chassis_Ctrl_Cmd_s *)CANCommGet(ci); // 获取云台板指令
-    else
-        chassis_cmd_recv.chassis_mode = CHASSIS_STOP; // 皆离线,急停
 }
 
 /* 腿缩回复位,只允许驱动轮电机移动 */
@@ -225,10 +245,11 @@ static void ResetChassis()
     EnableAllMotor(); // 打开全部电机,关节复位到起始角度,驱动电机响应速度输入以从墙角或固连中脱身
     // 复位时清空距离和腿长积累量,保证顺利站起
     chassis.dist = chassis.target_dist = 0;
+    chassis.target_yaw= chassis.yaw ;
     l_side.target_len = r_side.target_len = 0.24;
     // 撞墙时前后移动保证能重新站立,执行速度输入
-    LKMotorSetRef(l_driven, chassis_cmd_recv.vx * 2);
-    LKMotorSetRef(r_driven, -chassis_cmd_recv.vx * 2);
+    LKMotorSetRef(l_driven, chassis.target_v * 2);
+    LKMotorSetRef(r_driven, chassis.target_v * 2);
     // 若关节完成复位,进入ready态
     if (abs(lf->measure.total_angle) < 0.05 && abs(lf->measure.total_angle) > 0.02 &&
         abs(lb->measure.total_angle) < 0.05 && abs(lb->measure.total_angle) > 0.02 &&
@@ -273,24 +294,44 @@ static void WokingStateSet()
             LKMotorStop(driven[i]);
         return; // 关闭所有电机,发送的指令为零
     }
-
     // 运动模式
-    EnableAllMotor();
-    // 设置目标速度/腿长/距离
-    l_side.target_len += chassis_cmd_recv.delta_leglen;
-    r_side.target_len += chassis_cmd_recv.delta_leglen;
-    VAL_LIMIT(l_side.target_len, 0.13, 0.4); // 腿长限幅
-    VAL_LIMIT(r_side.target_len, 0.13, 0.4);
-    // 加速度限幅,防止键盘控制摔倒
-    if (abs(chassis_cmd_recv.vx - chassis.target_v) / del_t < MAX_ACC_REF)
-        chassis.target_v = chassis_cmd_recv.vx;
-    else
-        chassis.target_v += sign(chassis_cmd_recv.vx - chassis.target_v) * MAX_ACC_REF * del_t;
-    // 模型距离参考输入
-    chassis.target_dist += chassis.target_v * del_t;
-    chassis.target_yaw = chassis_cmd_recv.offset_angle; // 云台和底盘对齐时电机编码器的单圈反馈角度
+        EnableAllMotor();
+    if (chassis_cmd_recv.chassis_mode == CHASSIS_FREE_DEBUG)
+    {
+        
+        // 分模式设置目标速度/腿长/距离
+        if (switch_is_mid(rc_data->rc.switch_right) && RemoteControlIsOnline())
+        {
+            if (switch_is_down(rc_data->rc.switch_left) && RemoteControlIsOnline())
+            {
+                chassis.target_v = 1 * (float)rc_data[TEMP].rc.rocker_l1/660;
+                chassis.target_yaw_w = 0.8 * (float)rc_data[TEMP].rc.rocker_r_/660;
+            } else if (switch_is_mid(rc_data->rc.switch_left) && RemoteControlIsOnline())
+            {
+                 l_side.target_len =  r_side.target_len = 0.13 * (float)rc_data[TEMP].rc.rocker_r1/660 + 0.24;
+            } else if (switch_is_up(rc_data->rc.switch_left) && RemoteControlIsOnline())
+            {
+                l_side.target_len =  r_side.target_len += 0.13 * (float)rc_data[TEMP].rc.rocker_r1/660 + 0.24;
+                chassis.target_v = 1 * (float)rc_data[TEMP].rc.rocker_l1/660;
+                chassis.target_yaw_w = 0.8 * (float)rc_data[TEMP].rc.rocker_l_/660;
+            }
+            
+        }
+     }else  if (chassis_cmd_recv.chassis_mode == CHASSIS_ROTATE)
+    {
+          chassis.target_yaw_w = 1.6 * (float)rc_data[TEMP].rc.rocker_l_/660;
+     }
+      
+          // 模型距离参考输入
+        chassis.target_dist += chassis.target_v * del_t;
+        chassis.target_yaw += chassis.target_yaw_w* del_t; 
+    
+        VAL_LIMIT(l_side.target_len, 0.13, 0.4); // 腿长限幅
+        VAL_LIMIT(r_side.target_len, 0.13, 0.4);
+      
+    
+      
 }
-
 /**
  * @brief 将电机和imu的数据组装为LinkNPodParam结构体和chassisParam结构体
  *
@@ -324,26 +365,36 @@ static void ParamAssemble()
  * @note 得到的腿部力矩输出还要经过综合运动控制系统补偿后映射为两个关节电机输出
  *
  */
-static void CalcLQR(LinkNPodParam *p)
+static void CalcLQR()
 {
-    static float k[12][3] = {60.071162, -57.303242, -8.802552, -0.219882, -1.390464, -0.951558, 32.409644, -23.635877, -9.253521, 12.436266, -10.318639, -7.529540, 135.956804, -124.044032, 36.093582, 13.977819, -12.325081, 3.766791, 32.632159, -39.012888, 14.483707, 7.204778, -5.973109, 1.551763, 78.723013, -73.096567, 21.701734, 63.798027, -55.564993, 15.318437, -195.813486, 140.134182, 60.699132, -18.357761, 13.165559, 2.581731};
-    float T[2] = {0}; // 0 T_wheel  1 T_hip
-    float l = p->leg_len;
-    float lsqr = l * l;
-    // float dist_limit = abs(chassis.target_dist - chassis.dist) > MAX_DIST_TRACK ? sign(chassis.target_dist - chassis.dist) * MAX_DIST_TRACK : (chassis.target_dist - chassis.dist); // todo设置值
-    // float vel_limit = abs(chassis.target_v - chassis.vel) > MAX_VEL_TRACK ? sign(chassis.target_v - chassis.vel) * MAX_VEL_TRACK : (chassis.target_v - chassis.vel);
-    for (uint8_t i = 0; i < 2; ++i)
+    static float lqr_k[40][10] = {60.071162, -57.303242, -8.802552, -0.219882, -1.390464, -0.951558, 32.409644, -23.635877, -9.253521, 12.436266, -10.318639, -7.529540, 135.956804, -124.044032, 36.093582, 13.977819, -12.325081, 3.766791, 32.632159, -39.012888, 14.483707, 7.204778, -5.973109, 1.551763, 78.723013, -73.096567, 21.701734, 63.798027, -55.564993, 15.318437, -195.813486, 140.134182, 60.699132, -18.357761, 13.165559, 2.581731};
+    float k[4][10]={0};
+    float T[4] = {0}; //
+    float l = l_side.leg_len, r = r_side.leg_len;
+    float l_2 = l * l,r_2 = r * r;
+    float l_3 = l_2 * l, r_3 = r_2 * r;
+   
+
+    for (uint8_t i = 0; i < 4; i++)
     {
-        uint8_t j = i * 6;
-        T[i] = (k[j + 0][0] * lsqr + k[j + 0][1] * l + k[j + 0][2]) * -p->theta +
-               (k[j + 1][0] * lsqr + k[j + 1][1] * l + k[j + 1][2]) * -p->theta_w +
-               (k[j + 2][0] * lsqr + k[j + 2][1] * l + k[j + 2][2]) * (chassis.target_dist - chassis.dist) +
-               (k[j + 3][0] * lsqr + k[j + 3][1] * l + k[j + 3][2]) * (chassis.target_v - chassis.vel) +
-               (k[j + 4][0] * lsqr + k[j + 4][1] * l + k[j + 4][2]) * -chassis.pitch +
-               (k[j + 5][0] * lsqr + k[j + 5][1] * l + k[j + 5][2]) * -chassis.pitch_w;
+        for (uint8_t j = 0; j < 10; j++)
+        {
+            uint8_t n = i * 10 + j;
+            
+            k[i][j] = lqr_k[n][0]+lqr_k[n][1]*l+lqr_k[n][2]*r+lqr_k[n][3]*l_2+lqr_k[n][4]*l*r+lqr_k[n][5]*r_2+lqr_k[n][6]*l_3+lqr_k[n][7]*l_2*r+lqr_k[n][8]*l*r_2+lqr_k[n][9]*r_3;
+        }
+          
     }
-    p->T_wheel = T[0];
-    p->T_hip = T[1];
+    for (uint8_t c = 0; c < 4; c++)
+    {
+        T[c] = k[c][0]*(chassis.target_dist - chassis.dist)+k[c][1]*(chassis.target_v - chassis.vel)+k[c][2]*(chassis.target_yaw - chassis.yaw )+k[c][3]*(chassis.target_yaw_w-chassis.wz)+k[c][4]*(-l_side.theta)+k[c][5]*(-l_side.theta_w)+k[c][6]*(-r_side.theta)+k[c][7]*(-r_side.theta_w)+k[c][8]*( -chassis.pitch)+k[c][9]*( -chassis.pitch_w);
+    }
+    
+    
+    l_side.T_wheel = T[0];
+    l_side.T_hip = T[1];
+    r_side.T_wheel = T[2];
+    r_side.T_hip = T[3];
 }
 
 static void SynthesizeMotion() /* 腿部控制:抗劈叉; 轮子控制:转向 */

@@ -1,5 +1,4 @@
 #pragma once
-
 // 底盘参数
 #define CALF_LEN 0.245f           // 小腿
 #define THIGH_LEN 0.14f           // 大腿
@@ -72,7 +71,7 @@ typedef struct
     float acc, acc_m, acc_last; // 水平方向加速度,用于计算速度预测值
 
     float dist, target_dist;   // 底盘位移距离
-    float yaw, wz, target_yaw; // yaw角度和底盘角速度
+    float yaw, wz, target_yaw,target_yaw_w; // yaw角度和底盘角速度
     float pitch, pitch_w;      // 底盘俯仰角度和角速度
     float roll, roll_w;        // 底盘横滚角度和角速度
 } ChassisParam;

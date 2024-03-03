@@ -1,3 +1,29 @@
+# 工作流程
+1.电机初始化
+2.enable所有电机
+3.切换底盘控制和云台双板控制，modeswith
+4.机体参数组装
+5.倒地状态
+6.运动状态
+6.1 locomotion_controller(拟合K矩阵，得出四个力矩)
+6.2 leg_controller(roll与腿长的pid控制，gravity feedfoward force，inertia feedforward force，T_adapt)(后续考虑是否加入对theta的adapt补偿)
+7.输出
+
+模式切换：
+常态  CHASSIS_FREE_DEBUG,        // 底盘单独调试模式
+左     右
+       下    CHASSIS_STOP = 0,          // 电流零输入
+下     中    左摇杆前后，右摇杆左右
+中     中    右摇杆腿长
+上     中    左摇杆前后左右，右摇杆腿长
+       上    小陀螺
+
+## 待优化环节
+1.关节电机回缩从角度环控制改为力矩控制
+2.站立时将同时控制改为关节电机延迟输入
+
+
+
 # balance
 
 可以继续解耦,将VMC独立成模块.

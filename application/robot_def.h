@@ -39,6 +39,8 @@ typedef enum
 {
     ROBOT_STOP = 0,
     ROBOT_READY,
+    ROBOT_STAND,
+    ROBOT_FLOATING,
 } Robot_Status_e;
 
 // 应用状态
