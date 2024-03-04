@@ -42,10 +42,10 @@ static void CANAddFilter(CANInstance *_instance)
     {
         can_filter_conf.FilterMode = CAN_FILTERMODE_IDMASK;                                                   // 使用id mask模式，对应位匹配就可接受
         can_filter_conf.FilterScale = CAN_FILTERSCALE_32BIT;                                                  // 使用32位id模式,即32位有效
-        can_filter_conf.FilterIdHigh = (_instance->rx_id >> 16) & 0x0000;                                     // 过滤器寄存器的高16位，右移13位以获得扩展ID的高16位
-        can_filter_conf.FilterIdLow = _instance->rx_id & 0x0000;                                              // 过滤器寄存器的低16位，左移3位以获得扩展ID的低16位
-        can_filter_conf.FilterMaskIdHigh = 0x1F00 & 0x0000;  // 000 11111 00000000 = 0001 1111 0000 0000 = 0x1F00     // 1~3位为空给0 4~8位为反馈标识符必须匹配 9~16位为各种标志位不定 
-        can_filter_conf.FilterMaskIdLow = 0xFFFF & 0x0000;   // 11111111 11111111 = 1111 1111 1111 1111 = 0xFFFF      // 17~24位为电机CAN_ID必须匹配 25~32位为主机CAN_ID必须匹配 
+        can_filter_conf.FilterIdHigh = 0x0000;// (_instance->rx_id >> 16) & 0x0000;                                     // 过滤器寄存器的高16位，右移13位以获得扩展ID的高16位
+        can_filter_conf.FilterIdLow = 0x0000;// _instance->rx_id & 0x0000;                                              // 过滤器寄存器的低16位，左移3位以获得扩展ID的低16位
+        can_filter_conf.FilterMaskIdHigh = 0x0000;// 0x1F00 & 0x0000;// 000 11111 00000000 = 0001 1111 0000 0000 = 0x1F00// 1~3位为空给0 4~8位为反馈标识符必须匹配 9~16位为各种标志位不定 
+        can_filter_conf.FilterMaskIdLow = 0x0000;// 0xFFFF & 0x0000;// 11111111 11111111 = 1111 1111 1111 1111 = 0xFFFF // 17~24位为电机CAN_ID必须匹配 25~32位为主机CAN_ID必须匹配 
     }
     
     can_filter_conf.FilterFIFOAssignment = (_instance->tx_id & 1) ? CAN_RX_FIFO0 : CAN_RX_FIFO1;              // 奇数id的模块会被分配到FIFO0,偶数id的模块会被分配到FIFO1
