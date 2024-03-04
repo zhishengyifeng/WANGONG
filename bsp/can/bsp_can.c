@@ -42,10 +42,10 @@ static void CANAddFilter(CANInstance *_instance)
     {
         can_filter_conf.FilterMode = CAN_FILTERMODE_IDMASK;                                                   // 使用id mask模式，对应位匹配就可接受
         can_filter_conf.FilterScale = CAN_FILTERSCALE_32BIT;                                                  // 使用32位id模式,即32位有效
-        can_filter_conf.FilterIdHigh = (_instance->rx_id >> 13) & 0xFFFF;                                     // 过滤器寄存器的高16位，右移13位以获得扩展ID的高16位
-        can_filter_conf.FilterIdLow = (_instance->rx_id << 3) & 0xFFFF;                                       // 过滤器寄存器的低16位，左移3位以获得扩展ID的低16位
-        can_filter_conf.FilterMaskIdHigh = 0xF807;  // 1111 1000 0000 0111                                    // 1~5位为反馈标识符必须匹配 6~13位为各种标志位不定 14~16位为电机CAN_ID的前三位必须匹配
-        can_filter_conf.FilterMaskIdLow = 0xFFFF;   // 1111 1111 1111 1111                                    // 17~21位为电机CAN_ID的后五位必须匹配 22~29位为主机CAN_ID必须匹配 30~32位为空给1
+        can_filter_conf.FilterIdHigh = (_instance->rx_id >> 16) & 0x0000;                                     // 过滤器寄存器的高16位，右移13位以获得扩展ID的高16位
+        can_filter_conf.FilterIdLow = _instance->rx_id & 0x0000;                                              // 过滤器寄存器的低16位，左移3位以获得扩展ID的低16位
+        can_filter_conf.FilterMaskIdHigh = 0x1F00 & 0x0000;  // 000 11111 00000000 = 0001 1111 0000 0000 = 0x1F00     // 1~3位为空给0 4~8位为反馈标识符必须匹配 9~16位为各种标志位不定 
+        can_filter_conf.FilterMaskIdLow = 0xFFFF & 0x0000;   // 11111111 11111111 = 1111 1111 1111 1111 = 0xFFFF      // 17~24位为电机CAN_ID必须匹配 25~32位为主机CAN_ID必须匹配 
     }
     
     can_filter_conf.FilterFIFOAssignment = (_instance->tx_id & 1) ? CAN_RX_FIFO0 : CAN_RX_FIFO1;              // 奇数id的模块会被分配到FIFO0,偶数id的模块会被分配到FIFO1
@@ -184,7 +184,7 @@ static void CANFIFOxCallback(CAN_HandleTypeDef *_hcan, uint32_t fifox)
             else    //由于小米的垃圾协议，拓展帧里面也藏了数据，每次接收的拓展帧都不一样，所以拓展帧需要解ID
             {
                 uint32_t Motor_Can_ID;                                // 接收数据电机ID 
-                Motor_Can_ID = MIMotorGetID(rxconf.ExtId);           // 首先获取回传电机ID信息
+                Motor_Can_ID = MIMotorGetID(rxconf.ExtId >> 3);           // 首先获取回传电机ID信息
                 if (Motor_Can_ID == can_instance[i]->rx_id)
                 {
                     if (can_instance[i]->can_module_callback != NULL)              // 回调函数不为空就调用
