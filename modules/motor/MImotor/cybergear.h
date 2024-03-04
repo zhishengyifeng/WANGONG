@@ -145,7 +145,7 @@ extern void MIMotorSetMode(MIMotorInstance *Motor, uint8_t Mode);
 extern void MIMotorSetCurrent(MIMotorInstance *Motor, float Current);
 extern void MIMotorSetZeropos(MIMotorInstance *Motor);
 extern void MIMotorSetCANID(MIMotorInstance *Motor, uint8_t CAN_ID);
-extern void _MIMotorInit(MIMotorInstance *Motor, uint8_t Can_Id, uint8_t mode);
+extern void _MIMotorInit(MIMotorInstance *Motor, uint8_t mode);
 extern void MIMotorControlMode(MIMotorInstance *Motor, float torque, float MechPosition, float speed, float kp, float kd);
 extern uint32_t MIMotorGetID(uint32_t CAN_ID_Frame);
 

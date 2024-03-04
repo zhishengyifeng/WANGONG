@@ -241,7 +241,7 @@ void MIMotorSetCANID(MIMotorInstance *Motor, uint8_t CAN_ID)
  * @param[in]      mode: 电机工作模式（0.运动模式Motion_mode 1. 位置模式Position_mode 2. 速度模式Speed_mode 3. 电流模式Current_mode）
  * @retval         none
  */
-void _MIMotorInit(MIMotorInstance *Motor, uint8_t Can_Id, uint8_t mode)
+void _MIMotorInit(MIMotorInstance *Motor, uint8_t mode)
 {
   Motor->motor_can_instace->txconf.StdId = 0;          // 配置CAN发送：标准帧清零
   Motor->motor_can_instace->txconf.ExtId = 0;          // 配置CAN发送：扩展帧清零
@@ -249,7 +249,7 @@ void _MIMotorInit(MIMotorInstance *Motor, uint8_t Can_Id, uint8_t mode)
   Motor->motor_can_instace->txconf.RTR = CAN_RTR_DATA; // 配置CAN发送：数据帧
   Motor->motor_can_instace->txconf.DLC = 0x08;         // 配置CAN发送：数据长度
 
-  Motor->measure.CAN_ID = MIMotorGetID(Can_Id);       // ID设置
+  Motor->measure.CAN_ID = MIMotorGetID(Motor->motor_can_instace->rx_id);       // ID设置
   MIMotorSetMode(Motor, mode);          // 设置电机模式
   MIMotorEnable(Motor);                 // 使能电机
 }
@@ -326,7 +326,7 @@ MIMotorInstance *MIMotorInit(Motor_Init_Config_s *config)
 
     config->can_init_config.can_module_callback = MIMotorDecode;
     config->can_init_config.id = motor;
-    config->can_init_config.rx_id = (config->can_init_config.rx_id << 8) | 0x02000000;//查找所有用到motor->motor_can_instace.rx_id的地方，必须改为motor->measure.CAN_ID
+    config->can_init_config.rx_id = (config->can_init_config.rx_id << 8) | 0x02000000;//查找所有用到motor->motor_can_instace->rx_id的地方，必须改为motor->measure.CAN_ID
     motor->motor_can_instace = CANRegister(&config->can_init_config);
 
     Daemon_Init_Config_s conf = {
@@ -337,7 +337,7 @@ MIMotorInstance *MIMotorInit(Motor_Init_Config_s *config)
     motor->motor_daemon = DaemonRegister(&conf);
 
     DWT_Delay(0.1);
-    _MIMotorInit(motor, motor->motor_can_instace->rx_id, MI_Motion_mode);  //这里设置成运控模式，用小米自带的PID算法，不用自己算我们只需要在任务里面给定目标速度即可
+    _MIMotorInit(motor, MI_Motion_mode);  //这里设置成运控模式，用小米自带的PID算法，不用自己算我们只需要在任务里面给定目标速度即可
     DWT_Delay(0.1);
 
     mi_motor_instance[idx++] = motor;
