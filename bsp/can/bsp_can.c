@@ -186,14 +186,21 @@ static void CANFIFOxCallback(CAN_HandleTypeDef *_hcan, uint32_t fifox)
             }
             else    //由于小米的垃圾协议，拓展帧里面也藏了数据，每次接收的拓展帧都不一样，所以拓展帧需要解ID
             {
-                uint8_t Motor_Can_ID;                                // 接收数据电机ID 
                 /* 
-                发现问题：这里这样是不利于程序封装的，但是目前也只有小米电机用到了EXTID，并且把真实ID藏到了EXTID中，所以这里统一调用小米的解ID函数
-                解决方案：如果后续有电机也适用EXTID，可以用switch判断一下CAN实例的拥有者是什么类型，调用对应的解ID函数
-                温馨提示：CAN实例结构体中没有可以辨别拥有者的变量，可以在CAN实例结构体中加上Motor_Type_e枚举变量，并在拥有CAN实例的父实例对CAN初始化的时候赋值标明拥有者
+                    （一）：
+                        发现问题：这里这样是不利于程序封装的，但是目前也只有小米电机用到了EXTID，并且把真实ID藏到了EXTID中，所以这里统一调用小米的解ID函数
+                        解决方案：如果后续有电机也适用EXTID，可以用switch判断一下CAN实例的拥有者是什么类型，调用对应的解ID函数
+                        温馨提示：CAN实例结构体中没有可以辨别拥有者的变量，可以在CAN实例结构体中加上Motor_Type_e枚举变量，并在拥有CAN实例的父实例对CAN初始化的时候赋值标明拥有者
+                    （二）；
+                        发现问题：对于像小米这种把电机8位电机ID藏在29位EXTID中的恶心操作，由于湖大之前can实例中没有考虑，
+                                  所以他的rx_id是不能直接拿来匹配的，导致每次都需要重新解储存电机ID与接收ID，损耗运行时间
+                        解决方法：在CAN实例中再建一个储存真实ID的变量
+                        温馨提示：现在发现能跑，懒得写
                 */
-                Motor_Can_ID = MIMotorGetID(rxconf.ExtId);           // 首先获取回传电机ID信息
-                if (Motor_Can_ID == MIMotorGetID(can_instance[i]->rx_id))  
+                uint8_t Real_ID, Receive_ID;                                       // 接收数据电机ID 
+                Receive_ID = MIMotorGetID(rxconf.ExtId);                           // 获取接收电机ID信息
+                Real_ID = MIMotorGetID(can_instance[i]->rx_id);                    // 获取电机真实ID
+                if (Receive_ID == Real_ID)                                         // 如果接收到的ID与当前CAN实例的电机ID一致
                 {
                     if (can_instance[i]->can_module_callback != NULL)              // 回调函数不为空就调用
                     {

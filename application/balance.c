@@ -112,15 +112,8 @@ void BalanceInit()
         .can_init_config = {
             .can_handle = &hcan2,
             .ide = IDE_EXTID},
-        .controller_param_init_config = {
-            .speed_PID = {
-                .Kp = 0,
-                .Ki = 0,
-                .Kd = 0,
-            },
-        },
         .motor_type = MI,
-    };
+    }; 
     driven_conf.can_init_config.tx_id = 0x7F;
     driven_conf.can_init_config.rx_id = 0x7F;
     driven[LD] = l_driven = MIMotorInit(&driven_conf);
