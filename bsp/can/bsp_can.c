@@ -42,10 +42,10 @@ static void CANAddFilter(CANInstance *_instance)
     {
         can_filter_conf.FilterMode = CAN_FILTERMODE_IDMASK;                                                   // 使用id mask模式，对应位匹配就可接受
         can_filter_conf.FilterScale = CAN_FILTERSCALE_32BIT;                                                  // 使用32位id模式,即32位有效
-        can_filter_conf.FilterIdHigh = 0x0000;// (_instance->rx_id >> 16) & 0x0000;                           // 过滤器寄存器的高16位，右移13位以获得扩展ID的高16位
-        can_filter_conf.FilterIdLow = 0x0000;// _instance->rx_id & 0x0000;                                    // 过滤器寄存器的低16位，左移3位以获得扩展ID的低16位
-        can_filter_conf.FilterMaskIdHigh = 0x0000;// 0x1F00 & 0x0000;// 000 11111 00000000 = 0001 1111 0000 0000 = 0x1F00// 1~3位为空给0 4~8位为反馈标识符必须匹配 9~16位为各种标志位不定 
-        can_filter_conf.FilterMaskIdLow = 0x0000;// 0xFFFF & 0x0000;// 11111111 11111111 = 1111 1111 1111 1111 = 0xFFFF // 17~24位为电机CAN_ID必须匹配 25~32位为主机CAN_ID必须匹配 
+        can_filter_conf.FilterIdHigh = (_instance->rx_id >> 13) & 0xFFFF;                                     // 过滤器寄存器的高16位，右移13位以获得扩展ID的高16位
+        can_filter_conf.FilterIdLow = (_instance->rx_id << 3) & 0xFFFF;                                       // 过滤器寄存器的低16位，左移3位以获得扩展ID的低16位
+        can_filter_conf.FilterMaskIdHigh = 0xF807;  // 11111 00000000 111 = 1111 1000 0000 0111 = 0xF807      // 1~5位为反馈标识符必须匹配为1 6~13位为各种标志位不定为0 14~16位为电机CAN_ID高3位必须匹配为1
+        can_filter_conf.FilterMaskIdLow = 0xFFF8;   // 11111 11111111 000 = 1111 1111 1111 1000 = 0xFFF8      // 17~21位为电机CAN_ID低5位必须匹配为1 22~29位为主机CAN_ID必须匹配为1 1~3位空为0
     }
     
     can_filter_conf.FilterFIFOAssignment = (_instance->tx_id & 1) ? CAN_RX_FIFO0 : CAN_RX_FIFO1;              // 奇数id的模块会被分配到FIFO0,偶数id的模块会被分配到FIFO1
@@ -95,6 +95,7 @@ CANInstance *CANRegister(CAN_Init_Config_s *config)
     memset(instance, 0, sizeof(CANInstance));                           // 分配的空间未必是0,所以要先清空
     // 进行发送报文的配置
     instance->txconf.StdId = config->tx_id; // 发送id
+    instance->ide = config->ide;    // 帧形式
     if (config->ide == IDE_STDID)   // 标准id使用CAN_ID_STD,扩展id则使用CAN_ID_EXT
         instance->txconf.IDE = CAN_ID_STD;      
     else
@@ -186,7 +187,12 @@ static void CANFIFOxCallback(CAN_HandleTypeDef *_hcan, uint32_t fifox)
             else    //由于小米的垃圾协议，拓展帧里面也藏了数据，每次接收的拓展帧都不一样，所以拓展帧需要解ID
             {
                 uint32_t Motor_Can_ID;                                // 接收数据电机ID 
-                Motor_Can_ID = MIMotorGetID(rxconf.ExtId >> 3);           // 首先获取回传电机ID信息
+                /* 
+                发现问题：这里这样是不利于程序封装的，但是目前也只有小米电机用到了EXTID，并且把真实ID藏到了EXTID中，所以这里统一调用小米的解ID函数
+                解决方案：如果后续有电机也适用EXTID，可以用switch判断一下CAN实例的拥有者是什么类型，调用对应的解ID函数
+                温馨提示：CAN实例结构体中没有可以辨别拥有者的变量，可以在CAN实例结构体中加上Motor_Type_e枚举变量，并在拥有CAN实例的父实例对CAN初始化的时候赋值标明拥有者
+                */
+                Motor_Can_ID = MIMotorGetID(rxconf.ExtId);           // 首先获取回传电机ID信息
                 if (Motor_Can_ID == can_instance[i]->rx_id)
                 {
                     if (can_instance[i]->can_module_callback != NULL)              // 回调函数不为空就调用
