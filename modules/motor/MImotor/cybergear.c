@@ -406,7 +406,7 @@ void MIMotorTask(void const *argument)
         if (setting->motor_reverse_flag == MOTOR_DIRECTION_REVERSE)
             set *= -1;
 
-        MIMotorControlMode(motor, 0, 0, set, motor->speed_PID.Kp, motor->speed_PID.Kd);//这里我们只需要给出目标速度即可(-30rad/s ~ 30red/s)
+        MIMotorControlMode(motor, set, 0, 0, motor->speed_PID.Kp, motor->speed_PID.Kd);//这里我们只需要给出目标速度即可(-30rad/s ~ 30red/s)
 
         osDelay(1);
     }

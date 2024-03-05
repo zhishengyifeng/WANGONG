@@ -186,14 +186,14 @@ static void CANFIFOxCallback(CAN_HandleTypeDef *_hcan, uint32_t fifox)
             }
             else    //由于小米的垃圾协议，拓展帧里面也藏了数据，每次接收的拓展帧都不一样，所以拓展帧需要解ID
             {
-                uint32_t Motor_Can_ID;                                // 接收数据电机ID 
+                uint8_t Motor_Can_ID;                                // 接收数据电机ID 
                 /* 
                 发现问题：这里这样是不利于程序封装的，但是目前也只有小米电机用到了EXTID，并且把真实ID藏到了EXTID中，所以这里统一调用小米的解ID函数
                 解决方案：如果后续有电机也适用EXTID，可以用switch判断一下CAN实例的拥有者是什么类型，调用对应的解ID函数
                 温馨提示：CAN实例结构体中没有可以辨别拥有者的变量，可以在CAN实例结构体中加上Motor_Type_e枚举变量，并在拥有CAN实例的父实例对CAN初始化的时候赋值标明拥有者
                 */
                 Motor_Can_ID = MIMotorGetID(rxconf.ExtId);           // 首先获取回传电机ID信息
-                if (Motor_Can_ID == can_instance[i]->rx_id)
+                if (Motor_Can_ID == MIMotorGetID(can_instance[i]->rx_id))  
                 {
                     if (can_instance[i]->can_module_callback != NULL)              // 回调函数不为空就调用
                     {

@@ -116,7 +116,7 @@ void BalanceInit()
             .speed_PID = {
                 .Kp = 0,
                 .Ki = 0,
-                .Kd = 0.5,
+                .Kd = 0,
             },
         },
         .motor_type = MI,
