@@ -26,7 +26,6 @@
 #include "stdlib.h"
 
 uint8_t byte[4];              // 转换临时数据
-uint32_t send_mail_box = {0}; // NONE
 
 static uint8_t idx;
 static MIMotorInstance *mi_motor_instance[MI_MOTOR_CNT];
