@@ -6,6 +6,7 @@
 #define WHEEL_RADIUS 0.078f       // 轮子半径
 #define Mb 5.5f                    // 机体质量
 #define Ml 1.25f                    // 腿部质量
+#define Mw 1.1f                  // 驱动轮转子质量
 #define Rl 0.265f                    // 轮子间间距/2
 #define LIMIT_LINK_RAD 0.15149458 // 初始限位角度,见ParamAssemble
 #define WHEEL_DISTANCE 0.48f      // 轮子间距
@@ -48,18 +49,19 @@ typedef struct
     // link angle, phi1-ph5, phi5 is pod angle
     float phi1, phi2, phi3, phi4, phi5;
     // wheel
-    float w_ecd;      // 电机编码器速度
+    float w_ecd,w_ecd_hat;      // 电机编码器速度
     float wheel_dist; // 单侧轮子的位移
     float wheel_w;    // 单侧轮子的速度
     float body_v;     // 髋关节速度
-    float T_wheel;
+    float T_wheel,T_wheel_hat;
     // pod
     float theta, theta_w; // 杆和垂直方向的夹角,为控制状态之一
-    float leg_len, legd;
+    float leg_len, legd,legdd;
     float height, height_v;
-    float F_leg, T_hip;
+    float F_leg, T_hip,T_hip_floating;
     float target_len;
-    float inertial;
+    float inertial,roll_comp;
+    float FN;//支持力
 
     float coord[6]; // xb yb xc yc xd yd
 
@@ -69,14 +71,14 @@ typedef struct
 
 typedef struct
 {
-    float vel, target_v;        // 底盘速度
+    float vel,vel_hat, target_v;        // 底盘速度
     float vel_m;                // 底盘速度测量值
     float vel_predict;          // 底盘速度预测值
     float vel_cov;              // 速度方差
     float acc, acc_m, acc_last; // 水平方向加速度,用于计算速度预测值
 
     float dist, target_dist;   // 底盘位移距离
-    float yaw, wz, target_yaw,target_yaw_w; // yaw角度和底盘角速度
+    float yaw, wz,wz_hat, target_yaw,target_yaw_w; // yaw角度和底盘角速度
     float pitch, pitch_w;      // 底盘俯仰角度和角速度
     float roll, roll_w;        // 底盘横滚角度和角速度
 } ChassisParam;
