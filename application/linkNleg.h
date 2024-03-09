@@ -72,6 +72,7 @@ void Link2Leg(LinkNPodParam *p, ChassisParam *chassis)
     p->phi2_w = (phi2_pred - p->phi2) / predict_dt; // 稍后用于修正轮速
     p->phi5_w = (phi5_pred - p->phi5) / predict_dt;
     p->legd = (Sqrt(powf(xC - JOINT_DISTANCE / 2, 2) + powf(yC, 2)) - p->leg_len) / predict_dt;
+     p->legdd= p->legd/predict_dt;
     p->theta_w = ((phi5_pred - 0.5 * PI - chassis->pitch - p->theta) / predict_dt); // 可以不考虑机体? -predict_dt*chassis.pitch_w
     p->height_v = p->legd * mcos(p->theta) - p->leg_len * msin(p->theta) * p->theta_w;
 }
